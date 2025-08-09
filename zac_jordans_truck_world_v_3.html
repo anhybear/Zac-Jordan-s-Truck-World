@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>Zac & Jordan’s Truck World</title>
+<style>
+  :root{
+    --road-h:28vh;
+    --verge-h:18vh;
+    --sky-top:#8fd3ff;
+    --sky-bottom:#eaf7ff;
+    --road:#2b2b30;
+    --lane:#ffffffcc;
+    --gold:#ffd54a;
+    --danger:#ff3b30;
+    --accent:#0ea5e9;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";background:#f6fbff;color:#0b1220}
+  body{display:flex;flex-direction:column;user-select:none;touch-action:manipulation}
+
+  .topbar{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.8rem 1rem;background:linear-gradient(90deg,#fff 0%,#eef7ff 50%,#fff 100%);border-bottom:1px solid #e5efff;box-shadow:0 6px 20px rgba(14,165,233,.08)}
+  .title{line-height:1.1}
+  .title h1{margin:0;font-weight:900;letter-spacing:.3px;font-size:clamp(22px,3.8vw,34px);text-shadow:0 1px 0 #fff,0 6px 20px rgba(14,165,233,.25)}
+  .title .sub{margin-top:.35rem;display:inline-block;padding:.25rem .6rem;border-radius:999px;background:linear-gradient(90deg,#e6f4ff,#fff);border:1px solid #dbeafe;font-size:clamp(12px,2.2vw,15px);font-weight:700}
+  .controls{display:flex;align-items:center;gap:.6rem}
+  .btn{border:0;border-radius:999px;padding:.6rem .95rem;font-size:16px;cursor:pointer}
+  .btn.primary{background:var(--accent);color:#fff;box-shadow:0 2px 0 #0b84bb,0 8px 16px rgba(14,165,233,.18)}
+  .btn.secondary{background:#e2e8f0;color:#0b1220;box-shadow:0 2px 0 #cbd5e1,0 8px 16px rgba(2,6,23,.06)}
+  .btn:active{transform:translateY(1px)}
+  .score{min-width:120px;text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+
+  #game{position:relative;flex:1;overflow:hidden}
+  .sky{position:absolute;inset:0;background:linear-gradient(to bottom,var(--sky-top),var(--sky-bottom))}
+  .sun{position:absolute;top:4vh;right:6vw;font-size:12vh;line-height:1;display:inline-block;transform-origin:50% 50%;animation:sun-drift 8s ease-in-out infinite}
+  @keyframes sun-drift{0%,100%{transform:rotate(0deg) translateY(0)}50%{transform:rotate(4deg) translateY(-6px)}}
+
+  .cloud{position:absolute;top:4vh;left:10vw;font-size:6vh;opacity:.9;animation:cloud-drift 40s linear infinite}
+  .cloud.c2{top:8vh;left:45vw;font-size:7vh;opacity:.8;animation-duration:48s}
+  .cloud.c3{top:12vh;left:70vw;font-size:5.5vh;opacity:.75;animation-duration:56s}
+  @keyframes cloud-drift{from{transform:translateX(0)}to{transform:translateX(-50vw)}}
+
+  .buildings{position:absolute;left:0;right:0;bottom:calc(var(--road-h) + var(--verge-h) - 1.5vh);height:24vh;pointer-events:none;overflow:hidden}
+  .buildings .strip{position:absolute;left:0;bottom:0;white-space:nowrap;display:inline-block;animation:skyline-scroll 42s linear infinite}
+  .buildings .chunk{display:inline-block;letter-spacing:1vw}
+  .b1{font-size:10vh}
+  .b2{font-size:12vh}
+  .b3{font-size:14vh}
+  @keyframes skyline-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  .verge{position:absolute;left:0;right:0;bottom:0;height:var(--verge-h);background:linear-gradient(#79d95a,#6cca49);display:flex;align-items:flex-end;overflow:hidden}
+  .trees{position:absolute;left:0;right:0;bottom:0;height:100%;pointer-events:none}
+  .trees .strip{position:absolute;left:0;bottom:0;white-space:nowrap;display:inline-block}
+  .trees .strip.front{animation:tree-scroll 28s linear infinite}
+  .trees .strip.back{animation:tree-scroll 40s linear infinite}
+  .trees .chunk{display:inline-block;letter-spacing:.8vw}
+  .t1{font-size:11vh}
+  .t2{font-size:13vh}
+  .t3{font-size:15vh}
+  @keyframes tree-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  .road{position:absolute;left:0;right:0;bottom:var(--verge-h);height:var(--road-h);background:var(--road);box-shadow:inset 0 6px 0 #202026}
+  .road::before{content:"";position:absolute;left:-50%;top:50%;transform:translateY(-50%);height:4px;width:200%;background:repeating-linear-gradient(90deg,var(--lane),var(--lane) 7vw,transparent 7vw,transparent 12vw);opacity:.95;animation:lane-move 2.2s linear infinite}
+  @keyframes lane-move{from{transform:translate(-0%,-50%)}to{transform:translate(-25%,-50%)}}
+
+  #truck{position:absolute;bottom:calc(var(--verge-h) + (var(--road-h)*0.44));left:100vw;font-size:clamp(70px,12.4vh,116px);filter:drop-shadow(0 6px 0 rgba(0,0,0,.16)) drop-shadow(0 12px 18px rgba(0,0,0,.35));animation:bob 1.6s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .trail{position:absolute;width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.5);filter:blur(.5px);pointer-events:none;animation:puff 900ms ease-out forwards}
+  @keyframes puff{0%{opacity:.6;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(10px) scale(1.8)}}
+
+  #problems{position:absolute;inset:0;pointer-events:none}
+  .problem{position:absolute;width:88px;height:88px;display:flex;align-items:center;justify-content:center;font-size:58px;background:transparent;pointer-events:auto;touch-action:manipulation;text-shadow:0 2px 0 rgba(0,0,0,.25),0 0 8px rgba(255,255,255,.18);transition:transform .07s ease}
+  .problem.golden{filter:drop-shadow(0 0 10px rgba(255,213,74,.75))}
+  .problem .star{position:absolute;right:-6px;top:-10px;font-size:12px}
+  .problem.glow{filter:drop-shadow(0 0 10px rgba(37,99,235,.55))}
+  .problem:active{transform:scale(.96)}
+  .wiggle{animation:wiggle .45s ease}
+  @keyframes wiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg)}40%{transform:rotate(8deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(6deg)}}
+  .xmark{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:20px;color:var(--danger);opacity:0;animation:bump .75s ease}
+  @keyframes bump{0%{opacity:0;transform:translate(-50%,-6px)}30%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-10px)}}
+
+  .points{position:absolute;font-weight:900;font-size:18px;text-shadow:0 2px 0 rgba(0,0,0,.2);opacity:0;animation:float 800ms ease-out forwards;pointer-events:none}
+  @keyframes float{0%{transform:translateY(0) scale(.9);opacity:0}20%{opacity:1}100%{transform:translateY(-26px) scale(1);opacity:0}}
+  .combo{position:absolute;left:50%;top:10%;transform:translateX(-50%);padding:.42rem .8rem;border-radius:999px;background:#0f172a;color:#fff;font-weight:800;box-shadow:0 12px 26px rgba(0,0,0,.25);opacity:0;animation:popFade 900ms ease-out forwards}
+  @keyframes popFade{0%{transform:translate(-50%,-8px) scale(.9);opacity:0}30%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-12px) scale(1)}}
+
+  .footer{height:64px;display:flex;align-items:center;justify-content:space-around;gap:1rem;padding:.5rem .6rem;background:linear-gradient(0deg,#fff,#f6fbff);border-top:1px solid #e5efff}
+  .hint{display:flex;align-items:center;gap:.45rem;font-size:14px}
+  .hint .icon{font-size:20px}
+  .hint b{font-size:14px}
+
+  .pausedOverlay{position:absolute;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;z-index:6}
+  .pausedOverlay .panel{background:#fff;padding:1rem 1.2rem;border-radius:16px;text-align:center;box-shadow:0 20px 50px rgba(2,6,23,.35)}
+
+  .paused .cloud,.paused .buildings .strip,.paused .trees .strip,.paused .road::before,.paused #truck{animation-play-state:paused}
+
+  @media (max-width:480px){.problem{width:78px;height:78px;font-size:52px}.footer{height:56px}}
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="title">
+      <h1>🚚 Zac & Jordan’s Truck World</h1>
+      <div class="sub">Tap to help the trucks do their jobs!</div>
+    </div>
+    <div class="controls">
+      <button id="playBtn" class="btn primary">⏸️ Pause</button>
+      <button id="resetBtn" class="btn secondary">🔄 Reset</button>
+      <div class="score">Score: <span id="score">0</span></div>
+    </div>
+  </header>
+
+  <main id="game">
+    <div class="sky"></div>
+    <div class="sun">🌞</div>
+    <div class="cloud">☁️☁️</div>
+    <div class="cloud c2">☁️</div>
+    <div class="cloud c3">☁️☁️</div>
+
+    <div class="buildings" aria-hidden="true">
+      <div class="strip" style="width:200%">
+        <div class="chunk">
+          <span class="b1">🏢</span><span class="b2">🏬</span><span class="b3">🏨</span><span class="b1">🏥</span><span class="b2">🏫</span><span class="b3">🏭</span><span class="b2">🏛️</span>
+          <span class="b1">🏢</span><span class="b2">🏬</span><span class="b3">🏨</span><span class="b1">🏥</span><span class="b2">🏫</span><span class="b3">🏭</span><span class="b2">🏛️</span>
+        </div>
+        <div class="chunk">
+          <span class="b1">🏢</span><span class="b2">🏬</span><span class="b3">🏨</span><span class="b1">🏥</span><span class="b2">🏫</span><span class="b3">🏭</span><span class="b2">🏛️</span>
+          <span class="b1">🏢</span><span class="b2">🏬</span><span class="b3">🏨</span><span class="b1">🏥</span><span class="b2">🏫</span><span class="b3">🏭</span><span class="b2">🏛️</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="road"></div>
+
+    <div class="verge" aria-hidden="true">
+      <div class="trees">
+        <div class="strip back" style="width:300%">
+          <div class="chunk">
+            <span class="t1">🌳</span><span class="t2">🌳</span><span class="t3">🌳</span><span class="t2">🌳</span><span class="t1">🌳</span>
+            <span class="t1">🌳</span><span class="t2">🌳</span><span class="t3">🌳</span><span class="t2">🌳</span><span class="t1">🌳</span>
+            <span class="t1">🌳</span><span class="t2">🌳</span><span class="t3">🌳</span><span class="t2">🌳</span><span class="t1">🌳</span>
+          </div>
+          <div class="chunk">
+            <span class="t1">🌳</span><span class="t2">🌳</span><span class="t3">🌳</span><span class="t2">🌳</span><span class="t1">🌳</span>
+            <span class="t1">🌳</span><span class="t2">🌳</span><span class="t3">🌳</span><span class="t2">🌳</span><span class="t1">🌳</span>
+            <span class="t1">🌳</span><span class="t2">🌳</span><span class="t3">🌳</span><span class="t2">🌳</span><span class="t1">🌳</span>
+          </div>
+        </div>
+        <div class="strip front" style="width:300%">
+          <div class="chunk">
+            <span class="t3">🌳</span><span class="t2">🌳</span><span class="t1">🌳</span><span class="t3">🌳</span><span class="t2">🌳</span>
+            <span class="t3">🌳</span><span class="t2">🌳</span><span class="t1">🌳</span><span class="t3">🌳</span><span class="t2">🌳</span>
+            <span class="t3">🌳</span><span class="t2">🌳</span><span class="t1">🌳</span><span class="t3">🌳</span><span class="t2">🌳</span>
+          </div>
+          <div class="chunk">
+            <span class="t3">🌳</span><span class="t2">🌳</span><span class="t1">🌳</span><span class="t3">🌳</span><span class="t2">🌳</span>
+            <span class="t3">🌳</span><span class="t2">🌳</span><span class="t1">🌳</span><span class="t3">🌳</span><span class="t2">🌳</span>
+            <span class="t3">🌳</span><span class="t2">🌳</span><span class="t1">🌳</span><span class="t3">🌳</span><span class="t2">🌳</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="problems" aria-live="polite"></div>
+    <div id="truck" aria-label="truck" role="img"><span id="truckEmoji">🚒</span></div>
+
+    <div class="pausedOverlay" id="pausedOverlay"><div class="panel">Paused — tap to resume</div></div>
+  </main>
+
+  <footer class="footer">
+    <div class="hint"><span class="icon">🚒</span> <b>Put out fires!</b> 🔥</div>
+    <div class="hint"><span class="icon">🚜</span> <b>Clear rocks!</b> 🪨</div>
+    <div class="hint"><span class="icon">🚑</span> <b>Help people!</b> 🤕🤒😷</div>
+  </footer>
+
+<script>
+(function(){
+  const game=document.getElementById('game');
+  const problemsEl=document.getElementById('problems');
+  const truckEl=document.getElementById('truck');
+  const truckEmojiEl=document.getElementById('truckEmoji');
+  const scoreEl=document.getElementById('score');
+  const playBtn=document.getElementById('playBtn');
+  const resetBtn=document.getElementById('resetBtn');
+  const pausedOverlay=document.getElementById('pausedOverlay');
+
+  const TRUCKS=[
+    {key:'fire',emoji:'🚒',solves:['fire'],base:20},
+    {key:'tractor',emoji:'🚜',solves:['rock'],base:15},
+    {key:'ambulance',emoji:'🚑',solves:['injury'],base:20}
+  ];
+  const PROBLEM_TYPES=[
+    {key:'fire',emojis:['🔥']},
+    {key:'rock',emojis:['🪨']},
+    {key:'injury',emojis:['🤕','🤒','😷']}
+  ];
+
+  let width=game.clientWidth, height=game.clientHeight;
+  const ROAD_H=0.28, VERGE_H=0.18;
+  let roadTop=height*(1-(ROAD_H+VERGE_H));
+  let roadBottom=height*(1-VERGE_H);
+
+  let running=true, rafId=null;
+  let currentTruckIndex=0, truckX=width+160, truckSpeed=Math.max(105,width*0.10);
+  let lastTime=performance.now();
+  let spawnTimer=0, spawnInterval=950;
+  let score=0, streak=0, lastInteraction=Date.now(), idleCheck;
+
+  const problemsData=[];
+
+  function resize(){
+    width=game.clientWidth; height=game.clientHeight;
+    roadTop=height*(1-(ROAD_H+VERGE_H));
+    roadBottom=height*(1-VERGE_H);
+    truckX=Math.min(truckX,width+160);
+    problemsData.length=0;
+    problemsEl.innerHTML='';
+    spawnInitialMix();
+  }
+  window.addEventListener('resize',resize);
+
+  function choice(a){return a[Math.floor(Math.random()*a.length)]}
+  function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+
+  function setTruck(i){
+    currentTruckIndex=(i+TRUCKS.length)%TRUCKS.length;
+    truckEmojiEl.textContent=TRUCKS[currentTruckIndex].emoji;
+    truckX=width+160;
+  }
+  function nextTruck(){ setTruck(currentTruckIndex+1) }
+
+  let lastSpawnKey=null;
+  const MIN_SPACING=170;
+  function spawnProblem(forceKey){
+    if(problemsData.length>10) return;
+    const pool=forceKey?PROBLEM_TYPES.filter(p=>p.key===forceKey):PROBLEM_TYPES.filter(p=>p.key!==lastSpawnKey);
+    const type=choice(pool); lastSpawnKey=type.key;
+
+    let tries=0, ok=false, cx=0, cy=0;
+    const size=88, r=size/2;
+    while(tries++<50 && !ok){
+      cy=clamp( roadTop + (Math.random()*(roadBottom-roadTop-size)), roadTop+8, roadBottom-size-8 );
+      cx=clamp( (Math.random()*(width*0.8)) + width*0.1, 80, width-160 );
+      ok=true;
+      for(const p of problemsData){ if(Math.hypot(p.x-cx,p.y-cy)<MIN_SPACING){ ok=false; break } }
+    }
+    if(!ok) return;
+
+    const el=document.createElement('div'); el.className='problem';
+    const emoji=choice(type.emojis); const isGolden=Math.random()<0.10;
+    if(isGolden) el.classList.add('golden');
+    el.dataset.golden=isGolden?'1':'0'; el.dataset.type=type.key;
+    el.style.left=(cx-r)+'px'; el.style.top=(cy-r)+'px';
+    el.innerHTML=`<span class="em">${emoji}</span>`+(isGolden?`<span class="star">⭐</span>`:'');
+    el.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();registerInteraction();onProblemTap(el)},{passive:false});
+    problemsEl.appendChild(el);
+    problemsData.push({el,x:cx,y:cy});
+  }
+
+  function spawnInitialMix(){
+    ['fire','rock','injury'].forEach(k=>spawnProblem(k));
+    for(let i=0;i<4;i++) spawnProblem();
+  }
+
+  function onProblemTap(el){
+    const idx=problemsData.findIndex(p=>p.el===el);
+    const type=el.dataset.type;
+    const isGolden=el.dataset.golden==='1';
+    const t=TRUCKS[currentTruckIndex];
+    if(t.solves.includes(type)){
+      streak++;
+      const base=t.base*(isGolden?2:1);
+      const bonus=Math.min(Math.max(streak-1,0)*5,25);
+      const gained=base+bonus;
+      score+=gained; scoreEl.textContent=score;
+      celebrate(el,`+${gained}`);
+      el.remove();
+      if(idx>-1) problemsData.splice(idx,1);
+      comboMessage();
+    } else {
+      streak=0; wrongFx(el);
+    }
+  }
+
+  function celebrate(el,text){
+    const rect=el.getBoundingClientRect(), gameRect=game.getBoundingClientRect();
+    const p=document.createElement('div'); p.className='points'; p.textContent=text;
+    p.style.left=(rect.left-gameRect.left+rect.width/2-18)+'px';
+    p.style.top=(rect.top-gameRect.top-6)+'px';
+    game.appendChild(p); setTimeout(()=>p.remove(),900);
+    for(let i=0;i<4;i++){
+      const c=document.createElement('div'); c.className='points'; c.textContent=choice(['✨','🎉','🌟','💥']);
+      c.style.left=(rect.left-gameRect.left+rect.width/2+(Math.random()*30-15))+'px';
+      c.style.top=(rect.top-gameRect.top+(Math.random()*20-30))+'px';
+      c.style.animationDuration=(600+Math.random()*400)+'ms';
+      game.appendChild(c); setTimeout(()=>c.remove(),1000);
+    }
+  }
+
+  function wrongFx(el){
+    el.classList.remove('wiggle'); void el.offsetWidth; el.classList.add('wiggle');
+    const x=document.createElement('div'); x.className='xmark'; x.textContent='❌';
+    el.appendChild(x); setTimeout(()=>x.remove(),800);
+  }
+
+  function comboMessage(){
+    const msg=streak>=6?'Super!':streak>=4?'Amazing!':streak>=2?'Great!':'';
+    if(!msg) return; const c=document.createElement('div'); c.className='combo'; c.textContent=msg; game.appendChild(c); setTimeout(()=>c.remove(),1000);
+  }
+
+  let trailTimer=0;
+  function addTrail(){
+    const t=document.createElement('div'); t.className='trail';
+    const rect=truckEl.getBoundingClientRect(); const gameRect=game.getBoundingClientRect();
+    t.style.left=(rect.left-gameRect.left+rect.width*0.2+Math.random()*6)+'px';
+    t.style.top=(rect.top-gameRect.top+rect.height*0.65+Math.random()*2)+'px';
+    game.appendChild(t); setTimeout(()=>t.remove(),1000);
+  }
+
+  function loop(now){
+    const dt=(now-lastTime)/1000; lastTime=now;
+    truckX-=truckSpeed*dt; truckEl.style.left=truckX+'px'; if(truckX<-180) nextTruck();
+    trailTimer+=dt*1000; if(trailTimer>180){ addTrail(); trailTimer=0 }
+    spawnTimer+=dt*1000; if(spawnTimer>=spawnInterval){ spawnTimer=0; spawnProblem() }
+    const t=TRUCKS[currentTruckIndex];
+    const truckCenter=truckX+(truckEl.offsetWidth/2);
+    for(const p of problemsData){ const distance=Math.abs(p.x-truckCenter); if(t.solves.includes(p.el.dataset.type)&&distance<200) p.el.classList.add('glow'); else p.el.classList.remove('glow') }
+    rafId=requestAnimationFrame(loop)
+  }
+
+  function startLoop(){ if(rafId==null) rafId=requestAnimationFrame(t=>{ lastTime=t; loop(t) }) }
+  function stopLoop(){ if(rafId!=null){ cancelAnimationFrame(rafId); rafId=null } }
+  function pauseGame(showOverlay=true){ running=false; stopLoop(); document.body.classList.add('paused'); if(showOverlay) pausedOverlay.style.display='flex'; playBtn.textContent='▶️ Play' }
+  function resumeGame(){ running=true; document.body.classList.remove('paused'); pausedOverlay.style.display='none'; playBtn.textContent='⏸️ Pause'; startLoop() }
+  function togglePause(){ running?pauseGame():resumeGame() }
+  function registerInteraction(){ lastInteraction=Date.now(); if(!running) resumeGame() }
+  function startIdleWatch(){ clearInterval(idleCheck); idleCheck=setInterval(()=>{ if(Date.now()-lastInteraction>30000 && running){ pauseGame(true) } }, 1000) }
+
+  playBtn.addEventListener('click',()=>{ togglePause() });
+  resetBtn.addEventListener('click',()=>{ score=0; scoreEl.textContent='0'; streak=0; problemsData.length=0; problemsEl.innerHTML=''; lastSpawnKey=null; spawnInitialMix() });
+  pausedOverlay.addEventListener('pointerdown',()=>{ resumeGame() });
+  game.addEventListener('pointerdown',()=>{ registerInteraction() }, { passive:true });
+  window.addEventListener('beforeunload',()=>{ stopLoop(); clearInterval(idleCheck) });
+
+  resize(); setTruck(0); spawnInitialMix(); startIdleWatch(); startLoop();
+})();
+</script>
+</body>
+</html>
